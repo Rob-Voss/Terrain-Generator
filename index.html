@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Terrains</title>
+</head>
+<body>
+<link href="https://fonts.googleapis.com/css?family=Raleway:400,700" rel="stylesheet" type="text/css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.2/d3.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5.1/dat.gui.min.js"></script>
+<script src="js/external/priority-queue.js"></script>
+<script src="js/external/language.js"></script>
+<script src="js/Dat.js"></script>
+<script src="js/Terrain.js"></script>
+
+<div class="example" id="final"></div>
+
+<script>
+    var div = d3.select("div#final"),
+            w = 1000,
+            h = 1000,
+            svg = div.insert("svg", ":first-child")
+                    .attr("width", w)
+                    .attr("height", h)
+                    .attr("viewBox", "-" + w + "-" + h + " " + w * 2 + " " + h * 2),
+            opts = {
+                extent: {
+                    width: 2,
+                    height: 2
+                },
+                fontSizes: {
+                    region: 40,
+                    city: 25,
+                    town: 20
+                },
+                generator: generateCoastLine,
+                width: w,
+                height: h,
+                numPts: 8192,
+                numCities: 15,
+                numTerritories: 10,
+                seaLevel: 0
+            };
+    var map = new Map(opts, svg);
+    map.landscape = map.settings.generator(map.settings);
+    map.doMap();
+    datGUI(map);
+
+</script>
+</body>
+</html>
