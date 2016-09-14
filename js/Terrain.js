@@ -1,15 +1,15 @@
 "use strict";
 
-var rNorm = (function () {
-  var z2 = null;
+let rNorm = (function () {
+  let z2 = null;
 
-  function rnorm() {
+  function rNorm() {
     if (z2 != null) {
-      var tmp = z2;
+      let tmp = z2;
       z2 = null;
       return tmp;
     }
-    var x1 = 0,
+    let x1 = 0,
       x2 = 0,
       w = 2.0;
     while (w >= 1) {
@@ -23,33 +23,75 @@ var rNorm = (function () {
     return x1 * w;
   }
 
-  return rnorm;
+  return rNorm;
 })();
 
-var city_counts = {
-  'shore': (12, 20),
-  'island': (5, 10),
-  'mountain': (10, 25),
-  'desert': (5, 10)
-},
-terr_counts = {
-  'shore': (3, 7),
-  'island': (2, 4),
-  'mountain': (3, 6),
-  'desert': (3, 5)
-},
-riverpercs = {
-  'shore': 5,
-  'island': 3,
-  'mountain': 8,
-  'desert': 1
-};
+let city_counts = {
+    'shore': (12, 20),
+    'island': (5, 10),
+    'mountain': (10, 25),
+    'desert': (5, 10)
+  },
+  terr_counts = {
+    'shore': (3, 7),
+    'island': (2, 4),
+    'mountain': (3, 6),
+    'desert': (3, 5)
+  },
+  riverpercs = {
+    'shore': 5,
+    'island': 3,
+    'mountain': 8,
+    'desert': 1
+  };
+
+// var timer = d3.timer(function (elapsed) {
+//   for (let i = 0; i < n; ++i) {
+//     let p = particles[i];
+//     p[0] += p.vx;
+//     if (p[0] < 0) p[0] = p.vx *= -1; else if (p[0] > width) p[0] = width + (p.vx *= -1);
+//     p[1] += p.vy;
+//     if (p[1] < 0) p[1] = p.vy *= -1; else if (p[1] > height) p[1] = height + (p.vy *= -1);
+//     p.vx += 0.1 * (Math.random() - 0.5) - 0.01 * p.vx;
+//     p.vy += 0.1 * (Math.random() - 0.5) - 0.01 * p.vy;
+//   }
+//
+//   let topology = computeTopology(voronoi(particles));
+//
+//   context.clearRect(0, 0, width, height);
+//
+//   context.beginPath();
+//   renderMultiLineString(context, topojson.mesh(topology, topology.objects.voronoi, function (a, b) {
+//     return a !== b;
+//   }));
+//   context.strokeStyle = "rgba(0,0,0,0.4)";
+//   context.lineWidth = 0.5;
+//   context.stroke();
+//
+//   particles.forEach(function (p, i) {
+//     context.beginPath();
+//     context.arc(p[0], p[1], 2.5, 0, 2 * Math.PI);
+//     context.fillStyle = i & 1 ? "rgba(255,0,0,1)" : "rgba(0,0,0,0.6)";
+//     context.fill();
+//   });
+//
+//   context.beginPath();
+//   renderMultiPolygon(context, topojson.merge(topology, topology.objects.voronoi.geometries.filter(function (d, i) {
+//     return i & 1;
+//   })));
+//   context.fillStyle = "rgba(255,0,0,0.1)";
+//   context.fill();
+//   context.lineWidth = 1.5;
+//   context.lineJoin = "round";
+//   context.strokeStyle = "rgba(255,0,0,1)";
+//   context.stroke();
+// });
 
 const
   /**
    * Default font sizes for the map
    *
-   * @typedef {Object} fontSizeObject
+   * @typedef {object} fontSizeObject
    * @property {number} region
    * @property {number} city
    * @property {number} town
@@ -63,7 +105,7 @@ const
   /**
    * Extent Object
    *
-   * @typedef {Object} extentObject
+   * @typedef {object} extentObject
    * @property {number} width
    * @property {number} height
    */
@@ -73,9 +115,21 @@ const
   },
 
   /**
+   * Scale Object
+   *
+   * @typedef {object} scaleObject
+   * @property {number} width
+   * @property {number} height
+   */
+  scaleObject = {
+    width: 1000,
+    height: 1000
+  },
+
+  /**
    * Default options for the map generator
    *
-   * @typedef {Object} paramsObject
+   * @typedef {object} paramsObject
    * @property {extentObject} extent
    * @property {function} generator
    * @property {number} width
@@ -99,7 +153,7 @@ const
   /**
    * Mesh object
    *
-   * @typeDef {Object} meshObject
+   * @typeDef {object} meshObject
    * @property {Array} adj
    * @property {Array} edges
    * @property {extentObject} extent
@@ -125,12 +179,12 @@ const
  * @param {paramsObject} params
  */
 function generateCoastLine(params = paramsObject) {
-  var mesh = Mesh.generateGoodMesh(params.numPts, params.extent);
-  var landscape = add(
-    Mesh.slope(mesh, randomVector(4)),
-    Mesh.cone(mesh, runIf(-1, -1)),
-    Mesh.mountains(mesh, 150, 0.2)
-  );
+  let mesh = Mesh.generateGoodMesh(params.numPts, params.extent),
+    landscape = add(
+      Mesh.slope(mesh, randomVector(4)),
+      Mesh.cone(mesh, runIf(-1, -1)),
+      Mesh.mountains(mesh, 150, 0.2)
+    );
 
   for (let i = 0; i < 10; i++) {
     landscape = Mesh.relax(landscape);
@@ -149,12 +203,12 @@ function generateCoastLine(params = paramsObject) {
  * @param params
  */
 function generateLake(params = paramsObject) {
-  var mesh = Mesh.generateGoodMesh(params.numPts, params.extent);
+  let mesh = Mesh.generateGoodMesh(params.numPts, params.extent),
 
-  var landscape = add(
-    Mesh.cone(mesh, 2),
-    Mesh.mountains(mesh, 50)
-  );
+    landscape = add(
+      Mesh.cone(mesh, 2),
+      Mesh.mountains(mesh, 50)
+    );
 
   for (let i = 0; i < 10; i++) {
     landscape = Mesh.relax(landscape);
@@ -173,12 +227,12 @@ function generateLake(params = paramsObject) {
  * @param params
  */
 function generateIsland(params = paramsObject) {
-  var mesh = Mesh.generateGoodMesh(params.numPts, params.extent);
+  let mesh = Mesh.generateGoodMesh(params.numPts, params.extent),
 
-  var landscape = add(
-    Mesh.cone(mesh, -1),
-    Mesh.mountains(mesh, 50)
-  );
+    landscape = add(
+      Mesh.cone(mesh, -1),
+      Mesh.mountains(mesh, 50)
+    );
 
   for (let i = 0; i < 10; i++) {
     landscape = Mesh.relax(landscape);
@@ -193,7 +247,65 @@ function generateIsland(params = paramsObject) {
   return landscape;
 }
 
-
+// function computeTopology(diagram) {
+//   let cells = diagram.cells,
+//     arcs = [],
+//     arcIndex = -1,
+//     arcIndexByEdge = {};
+//
+//   return {
+//     objects: {
+//       voronoi: {
+//         type: "GeometryCollection",
+//         geometries: cells.map((cell) => {
+//           let site = cell.site,
+//             halfEdges = cell.halfedges,
+//             cellArcs = [],
+//             clipArc;
+//
+//           halfEdges.forEach(function (halfedge) {
+//             let edge = diagram.edges[halfedge];
+//             if (edge.right) {
+//               let l = edge.left.index,
+//                 r = edge.right.index,
+//                 k = l + "," + r,
+//                 i = arcIndexByEdge[k];
+//               if (i == null) {
+//                 arcs[i = arcIndexByEdge[k] = ++arcIndex] = edge;
+//               }
+//               cellArcs.push(site === edge.left ? i : ~i);
+//               clipArc = null;
+//             } else if (clipArc) {
+//               // Coalesce border edges.
+//               if (edge.left) {
+//                 // Copy-on-write.
+//                 edge = edge.slice();
+//               }
+//               clipArc.push(edge[1]);
+//             } else {
+//               arcs[++arcIndex] = clipArc = edge;
+//               cellArcs.push(arcIndex);
+//             }
+//           });
+//
+//           // Ensure the last point in the polygon is identical to the first point.
+//           let firstArcIndex = cellArcs[0],
+//             lastArcIndex = cellArcs[cellArcs.length - 1],
+//             firstArc = arcs[firstArcIndex < 0 ? ~firstArcIndex : firstArcIndex],
+//             lastArc = arcs[lastArcIndex < 0 ? ~lastArcIndex : lastArcIndex];
+//           lastArc[lastArcIndex < 0 ? 0 : lastArc.length - 1] = firstArc[firstArcIndex < 0 ? firstArc.length - 1 : 0].slice();
+//
+//           return {
+//             type: "Polygon",
+//             data: site.data,
+//             arcs: [cellArcs]
+//           };
+//         })
+//       }
+//     },
+//     arcs: arcs
+//   };
+// }
 
 function randomVector(scale) {
   return [scale * rNorm(), scale * rNorm()];
@@ -204,17 +316,16 @@ function runIf(lo, hi) {
 }
 
 function add() {
-  var n = arguments[0].length;
-  var newVals = Mesh.zero(arguments[0].mesh);
-  for (var i = 0; i < n; i++) {
-    for (var j = 0; j < arguments.length; j++) {
+  let n = arguments[0].length,
+    newVals = Mesh.zero(arguments[0].mesh);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < arguments.length; j++) {
       newVals[i] += arguments[j][i];
     }
   }
 
   return newVals;
 }
-
 
 
 /**
@@ -225,11 +336,11 @@ class Mesh {
   /**
    * The point where the three medians of the triangle intersect
    *
-   * @param {array} pts
+   * @param {Array} pts
    * @returns {*[]}
    */
   static centroid(pts) {
-    var x = 0, y = 0;
+    let x = 0, y = 0;
     for (let i = 0; i < pts.length; i++) {
       x += pts[i][0];
       y += pts[i][1];
@@ -250,7 +361,7 @@ class Mesh {
    */
   static cleanCoast(landscape, iterations) {
     for (let it = 0; it < iterations; it++) {
-      var changed = 0,
+      let changed = 0,
         newH = Mesh.zero(landscape.mesh);
       for (let i = 0; i < landscape.length; i++) {
         newH[i] = landscape[i];
@@ -324,9 +435,9 @@ class Mesh {
    * @returns {Array}
    */
   static contour(landscape, level = 0) {
-    var edges = [];
+    let edges = [];
     for (let i = 0; i < landscape.mesh.edges.length; i++) {
-      var e = landscape.mesh.edges[i],
+      let e = landscape.mesh.edges[i],
         e0 = e[0],
         e1 = e[1],
         lE0 = landscape[e0],
@@ -355,7 +466,7 @@ class Mesh {
    * @returns {number}
    */
   static distance(mesh, i, j) {
-    var p = mesh.vxs[i],
+    let p = mesh.vxs[i],
       q = mesh.vxs[j];
 
     return Math.sqrt((p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]));
@@ -394,7 +505,7 @@ class Mesh {
       if (Mesh.isEdge(landscape.mesh, i)) {
         return -2;
       }
-      var best = -1,
+      let best = -1,
         bestH = landscape[i],
         nbs = Mesh.neighbors(landscape.mesh, i);
       for (let j = 0; j < nbs.length; j++) {
@@ -407,7 +518,7 @@ class Mesh {
       return best;
     }
 
-    var downs = [];
+    let downs = [];
     for (let i = 0; i < landscape.length; i++) {
       downs[i] = downFrom(i);
     }
@@ -420,12 +531,13 @@ class Mesh {
    *
    * @param {object} landscape
    * @param {number} p
+   * @returns {object} newH
    */
   static dropEdge(landscape, p) {
     p = p || 4;
-    var newH = Mesh.zero(landscape.mesh);
+    let newH = Mesh.zero(landscape.mesh);
     for (let i = 0; i < landscape.length; i++) {
-      var v = landscape.mesh.vxs[i],
+      let v = landscape.mesh.vxs[i],
         x = 2.4 * v[0] / landscape.mesh.extent.width,
         y = 2.4 * v[1] / landscape.mesh.extent.height;
       newH[i] = landscape[i] - Math.exp(10 * (Math.pow(Math.pow(x, p) + Math.pow(y, p), 1 / p) - 1));
@@ -442,7 +554,7 @@ class Mesh {
    * @returns {meshObject} newH
    */
   static erode(landscape, amount) {
-    var er = Mesh.erosionRate(landscape),
+    let er = Mesh.erosionRate(landscape),
       newH = Mesh.zero(landscape.mesh),
       maxR = d3.max(er);
     for (let i = 0; i < landscape.length; i++) {
@@ -459,11 +571,11 @@ class Mesh {
    * @returns {meshObject} newH
    */
   static erosionRate(landscape) {
-    var flux = Mesh.getFlux(landscape),
+    let flux = Mesh.getFlux(landscape),
       slope = Mesh.getSlope(landscape),
       newH = Mesh.zero(landscape.mesh);
     for (let i = 0; i < landscape.length; i++) {
-      var river = Math.sqrt(flux[i]) * slope[i],
+      let river = Math.sqrt(flux[i]) * slope[i],
         creep = slope[i] * slope[i],
         total = 1000 * river + creep;
       total = total > 200 ? 200 : total;
@@ -481,7 +593,7 @@ class Mesh {
    * @returns {meshObject} newH
    */
   static fillSinks(landscape, epsilon = 1e-5) {
-    var infinity = 999999,
+    let infinity = 999999,
       newH = Mesh.zero(landscape.mesh);
     for (let i = 0; i < landscape.length; i++) {
       if (Mesh.isNearEdge(landscape.mesh, i)) {
@@ -492,19 +604,19 @@ class Mesh {
     }
 
     while (true) {
-      var changed = false;
+      let changed = false;
       for (let i = 0; i < landscape.length; i++) {
         if (newH[i] == landscape[i]) {
           continue;
         }
-        var nbs = Mesh.neighbors(landscape.mesh, i);
+        let nbs = Mesh.neighbors(landscape.mesh, i);
         for (let j = 0; j < nbs.length; j++) {
           if (landscape[i] >= newH[nbs[j]] + epsilon) {
             newH[i] = landscape[i];
             changed = true;
             break;
           }
-          var oh = newH[nbs[j]] + epsilon;
+          let oh = newH[nbs[j]] + epsilon;
           if ((newH[i] > oh) && (oh > landscape[i])) {
             newH[i] = oh;
             changed = true;
@@ -522,10 +634,10 @@ class Mesh {
    * @param {object} landscape
    */
   static findSinks(landscape) {
-    var dh = Mesh.downhill(landscape),
+    let dh = Mesh.downhill(landscape),
       sinks = [];
     for (let i = 0; i < dh.length; i++) {
-      var node = i;
+      let node = i;
       while (true) {
         if (Mesh.isEdge(landscape.mesh, node)) {
           sinks[i] = -2;
@@ -549,7 +661,7 @@ class Mesh {
   static generateGoodMesh(n, extent) {
     n = n || 1;
     extent = extent || extentObject;
-    var pts = Mesh.generateGoodPoints(n, extent);
+    let pts = Mesh.generateGoodPoints(n, extent);
 
     return Mesh.makeMesh(pts, extent);
   }
@@ -563,7 +675,7 @@ class Mesh {
   static generateGoodPoints(n, extent) {
     n = n || 1;
     extent = extent || extentObject;
-    var pts = Mesh.generatePoints(n, extent);
+    let pts = Mesh.generatePoints(n, extent);
     pts = pts.sort(function (a, b) {
       return a[0] - b[0];
     });
@@ -580,7 +692,7 @@ class Mesh {
   static generatePoints(n, extent) {
     n = n || 1;
     extent = extent || extentObject;
-    var pts = [];
+    let pts = [];
     for (let i = 0; i < n; i++) {
       pts.push([
         (Math.random() - 0.5) * extent.width,
@@ -598,7 +710,7 @@ class Mesh {
    * @returns {meshObject} flux
    */
   static getFlux(landscape) {
-    var dh = Mesh.downhill(landscape),
+    let dh = Mesh.downhill(landscape),
       idxs = [],
       flux = Mesh.zero(landscape.mesh);
 
@@ -612,7 +724,7 @@ class Mesh {
     });
 
     for (let i = 0; i < landscape.length; i++) {
-      var j = idxs[i];
+      let j = idxs[i];
       if (dh[j] >= 0) {
         flux[dh[j]] += flux[j];
       }
@@ -628,10 +740,10 @@ class Mesh {
    * @returns {meshObject} slope
    */
   static getSlope(landscape) {
-    var dh = Mesh.downhill(landscape),
+    let dh = Mesh.downhill(landscape),
       slope = Mesh.zero(landscape.mesh);
     for (let i = 0; i < landscape.length; i++) {
-      var s = Mesh.triSlope(landscape, i);
+      let s = Mesh.triSlope(landscape, i);
       slope[i] = Math.sqrt(s[0] * s[0] + s[1] * s[1]);
       // continue;
       if (dh[i] < 0) {
@@ -677,7 +789,7 @@ class Mesh {
    * @returns {boolean}
    */
   static isNearEdge(mesh, i) {
-    var x = mesh.vxs[i][0],
+    let x = mesh.vxs[i][0],
       y = mesh.vxs[i][1],
       w = mesh.extent.width,
       h = mesh.extent.height;
@@ -692,18 +804,18 @@ class Mesh {
    * @returns {meshObject} mesh
    */
   static makeMesh(points, extent) {
-    var voronoi = Mesh.voronoi(points, extent),
+    let voronoi = Mesh.voronoi(points, extent),
       vxs = [],
       vxIds = {},
       adjacencies = [],
       edges = [],
       triangles = [];
     for (let i = 0; i < voronoi.edges.length; i++) {
-      var edge = voronoi.edges[i];
+      let edge = voronoi.edges[i];
       if (edge == undefined) {
         continue;
       }
-      var e0 = vxIds[edge[0]],
+      let e0 = vxIds[edge[0]],
         e1 = vxIds[edge[1]];
       if (e0 == undefined) {
         e0 = vxs.length;
@@ -739,7 +851,7 @@ class Mesh {
     /**
      * @type {meshObject} mesh
      */
-    var mesh = {
+    let mesh = {
       adj: adjacencies,
       edges: edges,
       extent: extent,
@@ -750,7 +862,7 @@ class Mesh {
     };
 
     mesh.map = function (f) {
-      var mapped = vxs.map(f);
+      let mapped = vxs.map(f);
       mapped.mesh = mesh;
 
       return mapped;
@@ -766,7 +878,7 @@ class Mesh {
    * @returns {object} newH
    */
   static map(landscape, f) {
-    var newH = landscape.map(f);
+    let newH = landscape.map(f);
     newH.mesh = landscape.mesh;
 
     return newH;
@@ -778,9 +890,9 @@ class Mesh {
    * @returns {Array} paths
    */
   static mergeSegments(segments) {
-    var adj = {};
+    let adj = {};
     for (let i = 0; i < segments.length; i++) {
-      var seg = segments[i],
+      let seg = segments[i],
         a0 = adj[seg[0]] || [],
         a1 = adj[seg[1]] || [];
       a0.push(seg[1]);
@@ -788,7 +900,7 @@ class Mesh {
       adj[seg[0]] = a0;
       adj[seg[1]] = a1;
     }
-    var done = [],
+    let done = [],
       paths = [],
       path = null;
     while (true) {
@@ -803,7 +915,7 @@ class Mesh {
           break;
         }
       }
-      var changed = false;
+      let changed = false;
       for (let i = 0; i < segments.length; i++) {
         if (done[i]) {
           continue;
@@ -838,7 +950,7 @@ class Mesh {
    * @param {meshObject} mesh
    * @param {number} number
    * @param {number} radius
-   * @returns {meshObject} newVals
+   * @returns {Array} newVals
    */
   static mountains(mesh, number, radius = 0.05) {
     let mounts = [],
@@ -852,9 +964,8 @@ class Mesh {
     for (let i = 0; i < mesh.vxs.length; i++) {
       let p = mesh.vxs[i];
       for (let j = 0; j < number; j++) {
-        let m = mounts[j],
-          val = Math.pow(Math.exp(-((p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1])) / (2 * radius * radius)), 2);
-        newVals[i] += val;
+        let m = mounts[j];
+        newVals[i] += Math.pow(Math.exp(-((p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1])) / (2 * radius * radius)), 2);
       }
     }
 
@@ -868,7 +979,7 @@ class Mesh {
    * @returns {Array} nbs
    */
   static neighbors(mesh, i) {
-    var onbs = mesh.adj[i],
+    let onbs = mesh.adj[i],
       nbs = [];
     for (let i = 0; i < onbs.length; i++) {
       nbs.push(onbs[i]);
@@ -884,7 +995,7 @@ class Mesh {
    * @returns {*}
    */
   static normalize(landscape) {
-    var lo = d3.min(landscape),
+    let lo = d3.min(landscape),
       hi = d3.max(landscape);
 
     return Mesh.map(landscape, function (x) {
@@ -910,7 +1021,7 @@ class Mesh {
    * @returns {number}
    */
   static quantile(landscape, q) {
-    var sortedH = [];
+    let sortedH = [];
     for (let i = 0; i < landscape.length; i++) {
       sortedH[i] = landscape[i];
     }
@@ -927,9 +1038,9 @@ class Mesh {
    * @returns {meshObject} newH
    */
   static relax(landscape) {
-    var newH = Mesh.zero(landscape.mesh);
+    let newH = Mesh.zero(landscape.mesh);
     for (let i = 0; i < landscape.length; i++) {
-      var nbs = Mesh.neighbors(landscape.mesh, i);
+      let nbs = Mesh.neighbors(landscape.mesh, i);
       if (nbs.length < 3) {
         newH[i] = 0;
         continue;
@@ -950,9 +1061,9 @@ class Mesh {
    * @returns {Array} newPath
    */
   static relaxPath(path) {
-    var newPath = [path[0]];
+    let newPath = [path[0]];
     for (let i = 1; i < path.length - 1; i++) {
-      var newPt = [
+      let newPt = [
         0.25 * path[i - 1][0] + 0.5 * path[i][0] + 0.25 * path[i + 1][0],
         0.25 * path[i - 1][1] + 0.5 * path[i][1] + 0.25 * path[i + 1][1]
       ];
@@ -972,7 +1083,7 @@ class Mesh {
    * @returns {meshObject} newH
    */
   static setSeaLevel(landscape, q) {
-    var newH = Mesh.zero(landscape.mesh),
+    let newH = Mesh.zero(landscape.mesh),
       delta = Mesh.quantile(landscape, q);
     for (let i = 0; i < landscape.length; i++) {
       let landVal = landscape[i];
@@ -1002,11 +1113,11 @@ class Mesh {
    * @returns {*[]}
    */
   static triSlope(landscape, i) {
-    var nbs = Mesh.neighbors(landscape.mesh, i);
+    let nbs = Mesh.neighbors(landscape.mesh, i);
     if (nbs.length != 3) {
       return [0, 0];
     }
-    var p0 = landscape.mesh.vxs[nbs[0]],
+    let p0 = landscape.mesh.vxs[nbs[0]],
       p1 = landscape.mesh.vxs[nbs[1]],
       p2 = landscape.mesh.vxs[nbs[2]],
 
@@ -1032,20 +1143,19 @@ class Mesh {
    * @returns {d3.voronoi} v
    */
   static voronoi(pts, extent) {
-    var w = extent.width / 2,
-      h = extent.height / 2,
-      v = d3.voronoi().extent([[-w, -h], [w, h]])(pts);
+    let w = extent.width / 2,
+      h = extent.height / 2;
 
-    return v;
+    return d3.voronoi().extent([[-w, -h], [w, h]])(pts);
   }
 
   /**
    *
    * @param {meshObject} mesh
-   * @returns {meshObject} z
+   * @returns {object} z
    */
   static zero(mesh) {
-    var z = [];
+    let z = [];
     for (let i = 0; i < mesh.vxs.length; i++) {
       z[i] = 0;
     }
@@ -1242,7 +1352,7 @@ class Map {
    */
   addCity() {
     this.cities = this.cities || [];
-    var score = this.cityScore(),
+    let score = this.cityScore(),
       newCity = d3.scan(score, d3.descending);
     this.cities.push(newCity);
   }
@@ -1260,7 +1370,7 @@ class Map {
    * @returns {object} score
    */
   cityScore() {
-    var score = Mesh.map(Mesh.getFlux(this.landscape), Math.sqrt);
+    let score = Mesh.map(Mesh.getFlux(this.landscape), Math.sqrt);
     for (let i = 0; i < this.landscape.length; i++) {
       if (this.landscape[i] <= 0 || Mesh.isNearEdge(this.landscape.mesh, i)) {
         score[i] = -999999;
@@ -1278,6 +1388,8 @@ class Map {
 
   /**
    * Clear the map
+   *
+   * @returns {Map}
    */
   clearMap() {
     this.borders = [];
@@ -1294,6 +1406,8 @@ class Map {
 
   /**
    * Generate all the coasts, borders, cities etc and draw them
+   *
+   * @returns {Map}
    */
   doMap() {
     this.getRivers(this.landscape, 0.01);
@@ -1311,10 +1425,12 @@ class Map {
   /**
    * Draw the cities
    *
+   * @param {string} cls
+   * @param {Array} pts
    * @returns {Map}
    */
   drawCircles(cls, pts) {
-    var circles = this.svg.selectAll('circle.' + cls).data(pts);
+    let circles = this.svg.selectAll('circle.' + cls).data(pts);
     circles.enter().append('circle').classed(cls, true);
     circles.exit().remove();
 
@@ -1340,11 +1456,12 @@ class Map {
   /**
    * Draw the labels for regions and cities
    *
-   * @param cls
-   * @param pts
+   * @param {string} cls
+   * @param {Array} pts
+   * @returns {Map}
    */
   drawLabels(cls, pts) {
-    var cityTexts = this.svg.selectAll('text.city').data(this.cityLabels);
+    let cityTexts = this.svg.selectAll('text.city').data(this.cityLabels);
     cityTexts.enter().append('text').classed('city', true);
     cityTexts.exit().remove();
 
@@ -1375,7 +1492,7 @@ class Map {
       .raise();
 
 
-    var regionTexts = this.svg.selectAll('text.region').data(this.regionLabels);
+    let regionTexts = this.svg.selectAll('text.region').data(this.regionLabels);
     regionTexts.enter().append('text').classed('region', true);
     regionTexts.exit().remove();
 
@@ -1436,11 +1553,11 @@ class Map {
    * Draw the path of points for the passed in class, river, coast etc.
    *
    * @param {string} cls
-   * @param {Array} paths
+   * @param {Array} pts
    * @returns {Map}
    */
   drawPaths(cls, pts) {
-    var svgPaths = this.svg.selectAll('path.' + cls).data(pts);
+    let svgPaths = this.svg.selectAll('path.' + cls).data(pts);
     svgPaths.enter().append('path').classed(cls, true);
     svgPaths.exit().remove();
 
@@ -1475,10 +1592,11 @@ class Map {
   /**
    * Draw the points of the map, mainly a way to see the underlying mesh points
    *
+   * @param {Array} pts
    * @returns {Map}
    */
   drawPoints(pts) {
-    var circle = this.svg.selectAll('circle').data(pts);
+    let circle = this.svg.selectAll('circle').data(pts);
     circle.enter().append('circle');
     circle.exit().remove();
     d3.selectAll('circle')
@@ -1497,7 +1615,7 @@ class Map {
    * Draw teh scores of the cities
    */
   drawScores() {
-    var score = this.cityScore();
+    let score = this.cityScore();
     this.drawVoronoi(score, d3.max(score) - 0.5, d3.max(score) + 0.5);
 
     return this;
@@ -1509,21 +1627,22 @@ class Map {
    * Similarly, the strokes on the 'near' side of hills should be longer than
    * those on the 'far' side.
    *
+   * @param {object} landscape
    * @returns {Map}
    */
   drawSlopes(landscape) {
-    var strokes = [],
+    let strokes = [],
       r = 0.25 / Math.sqrt(landscape.length);
     for (let i = 0; i < landscape.length; i++) {
       if (landscape[i] <= 0 || Mesh.isNearEdge(landscape.mesh, i)) {
         continue;
       }
-      var nbs = Mesh.neighbors(landscape.mesh, i),
+      let nbs = Mesh.neighbors(landscape.mesh, i),
         s = 0,
         s2 = 0;
       nbs.push(i);
       for (let j = 0; j < nbs.length; j++) {
-        var slopes = Mesh.triSlope(landscape, nbs[j]);
+        let slopes = Mesh.triSlope(landscape, nbs[j]);
         s += slopes[0] / 10;
         s2 += slopes[1];
       }
@@ -1532,17 +1651,17 @@ class Map {
       if (Math.abs(s) < runIf(0.1, 0.4)) {
         continue;
       }
-      var l = r * runIf(1, 2) * (1 - 0.2 * Math.pow(Math.atan(s), 2)) * Math.exp(s2 / 100),
+      let l = r * runIf(1, 2) * (1 - 0.2 * Math.pow(Math.atan(s), 2)) * Math.exp(s2 / 100),
         x = landscape.mesh.vxs[i][0],
         y = landscape.mesh.vxs[i][1];
       if (Math.abs(l * s) > 2 * r) {
-        var n = Math.floor(Math.abs(l * s / r));
+        let n = Math.floor(Math.abs(l * s / r));
         l /= n;
         if (n > 4) {
           n = 4;
         }
         for (let j = 0; j < n; j++) {
-          var u = rNorm() * r,
+          let u = rNorm() * r,
             v = rNorm() * r;
           strokes.push([[x + u - l, y + v + l * s], [x + u + l, y + v - l * s]]);
         }
@@ -1551,7 +1670,7 @@ class Map {
       }
     }
 
-    var lines = this.svg.selectAll('line.slope').data(strokes);
+    let lines = this.svg.selectAll('line.slope').data(strokes);
     lines.enter().append('line').classed('slope', true);
     lines.exit().remove();
 
@@ -1579,18 +1698,18 @@ class Map {
   /**
    * Draw the points as triangles and colors indicating height
    *
-   * @param {Object} landscape
+   * @param {object} landscape
    * @param {number|null} lo
    * @param {number|null} hi
    */
   drawVoronoi(landscape, lo = null, hi = null) {
-    if (hi == null) {
+    if (hi === null) {
       hi = d3.max(landscape) + 1e-9;
     }
-    if (lo == null) {
+    if (lo === null) {
       lo = d3.min(landscape) - 1e-9;
     }
-    var mappedVals = landscape.map(function (x) {
+    let mappedVals = landscape.map(function (x) {
         return x > hi ? 1 : x < lo ? 0 : (x - lo) / (hi - lo);
       }),
       tris = this.svg.selectAll('path.field').data(landscape.mesh.tris);
@@ -1610,12 +1729,14 @@ class Map {
   /**
    * Generate and set the borders for the landscape
    *
+   * @param {object} landscape
+   * @param {object} territories
    * @returns {Map}
    */
   getBorders(landscape, territories) {
-    var edges = [];
+    let edges = [];
     for (let i = 0; i < territories.mesh.edges.length; i++) {
-      var e = territories.mesh.edges[i];
+      let e = territories.mesh.edges[i];
       if (e[3] == undefined) {
         continue;
       }
@@ -1641,9 +1762,9 @@ class Map {
    * @returns {Map}
    */
   getCities() {
-    var n = this.settings.numCities;
+    let n = this.settings.numCities;
     for (let i = 0; i < n; i++) {
-      var score = this.cityScore(),
+      let score = this.cityScore(),
         newCity = d3.scan(score, d3.descending);
       this.cities.push(newCity);
     }
@@ -1654,6 +1775,7 @@ class Map {
   /**
    * Generate and set the coasts for the landscape
    *
+   * @param {object} landscape
    * @returns {Map}
    */
   getCoasts(landscape) {
@@ -1665,15 +1787,16 @@ class Map {
   /**
    * Generate and set the labels for the landscape
    *
+   * @param {object} landscape
    * @returns {Map}
    */
   getLabels(landscape) {
-    var numTer = this.settings.numTerritories,
+    let numTer = this.settings.numTerritories,
       avoids = [this.rivers, this.coasts, this.borders],
       lang = makeRandomLanguage();
     this.cityLabels = [];
 
-    var penalty = (label) => {
+    let penalty = (label) => {
       let pen = 0;
       if (label.x0 < -0.45 * landscape.mesh.extent.width) {
         pen += 100;
@@ -1724,7 +1847,7 @@ class Map {
       let x = landscape.mesh.vxs[this.cities[i]][0],
         y = landscape.mesh.vxs[this.cities[i]][1],
         text = makeName(lang, 'city'),
-        town = i < numTer ? false : true,
+        town = i >= numTer,
         size = town ? this.settings.fontSizes.city : this.settings.fontSizes.town,
         sx = 0.65 * size / 1000 * text.length,
         sy = size / 1000,
@@ -1849,11 +1972,12 @@ class Map {
   /**
    * Generate and set the rivers for the landscape
    *
+   * @param {object} landscape
    * @param {number} limit
    * @returns {Map}
    */
   getRivers(landscape, limit = 0.01) {
-    var dh = Mesh.downhill(landscape),
+    let dh = Mesh.downhill(landscape),
       flux = Mesh.getFlux(landscape),
       links = [],
       above = 0;
@@ -1902,7 +2026,7 @@ class Map {
    */
   getTerritories(landscape) {
     this.territories = [];
-    var n = this.settings.numTerritories;
+    let n = this.settings.numTerritories;
     if (n > this.cities.length) {
       n = this.cities.length;
     }
@@ -1913,8 +2037,8 @@ class Map {
         }
       });
 
-    var weight = (u, v) => {
-      var horiz = Mesh.distance(landscape.mesh, u, v),
+    let weight = (u, v) => {
+      let horiz = Mesh.distance(landscape.mesh, u, v),
         vert = landscape[v] - landscape[u];
       if (vert > 0) {
         vert /= 10;
@@ -1949,7 +2073,7 @@ class Map {
         continue;
       }
       this.territories[u.vx] = u.city;
-      var nbs = Mesh.neighbors(landscape.mesh, u.vx);
+      let nbs = Mesh.neighbors(landscape.mesh, u.vx);
       for (let i = 0; i < nbs.length; i++) {
         let v = nbs[i],
           newDist = weight(u.vx, v);
@@ -1972,13 +2096,13 @@ class Map {
   /**
    * Find the center of a territory
    *
-   * @param {Object} terr
-   * @param {Object} city
+   * @param {object} terr
+   * @param {object} city
    * @param {boolean} landOnly
    * @returns {*[]}
    */
   getTerritoryCenter(terr, city, landOnly) {
-    var x = 0, y = 0, n = 0;
+    let x = 0, y = 0, n = 0;
     for (let i = 0; i < terr.length; i++) {
       if (terr[i] != city) {
         continue;
@@ -2000,8 +2124,8 @@ class Map {
    * @param {Array} path
    * @return {string}
    */
-  makeD3Path(path) {
-    var p = d3.path();
+  static makeD3Path(path) {
+    let p = d3.path();
     p.moveTo(1000 * path[0][0], 1000 * path[0][1]);
     for (let i = 1; i < path.length; i++) {
       p.lineTo(1000 * path[i][0], 1000 * path[i][1]);

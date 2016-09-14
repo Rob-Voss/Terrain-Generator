@@ -5,7 +5,7 @@
  * @constructor
  */
 function datGUI (object) {
-    var wGUI = new dat.GUI({resizable: true, autoPlace: true, name: 'Controls'}),
+    let wGUI = new dat.GUI({resizable: true, autoPlace: true, name: 'Controls'}),
         sFolder = wGUI.addFolder('Settings');
 
     for (let go in object.settings) {
@@ -21,7 +21,7 @@ function datGUI (object) {
                 });
             } else {
                let folder = sFolder.addFolder(go.charAt(0).toUpperCase() + go.slice(1));
-                for (var gp in object.settings[go]) {
+                for (let gp in object.settings[go]) {
                     if (object.settings[go].hasOwnProperty(gp)) {
                         let typ = typeof object.settings[go][gp];
                         if (typ !== 'object') {
@@ -34,7 +34,7 @@ function datGUI (object) {
             }
         }
     }
-    var fFolder = wGUI.addFolder('Functions');
+    let fFolder = wGUI.addFolder('Functions');
     for (let fo in object.functions) {
         if (object.functions.hasOwnProperty(fo)) {
             let ty = typeof object.functions[fo];
@@ -42,7 +42,7 @@ function datGUI (object) {
                 fFolder.add(object.functions, fo).listen().name(fo);
             } else {
                 let folder = fFolder.addFolder(fo.charAt(0).toUpperCase() + fo.slice(1));
-                for (var gp in object.functions[fo]) {
+                for (let gp in object.functions[fo]) {
                     if (object.functions[fo].hasOwnProperty(gp)) {
                         let typ = typeof object.functions[fo][gp];
                         if (typ === 'function') {
