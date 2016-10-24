@@ -7,44 +7,66 @@
 <body>
 <link href="https://fonts.googleapis.com/css?family=Raleway:400,700" rel="stylesheet" type="text/css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.2/d3.js"></script>
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.14/d3.js"></script>-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5.1/dat.gui.min.js"></script>
+<script src="js/external/perlin.js"></script>
 <script src="js/external/priority-queue.js"></script>
 <script src="js/external/language.js"></script>
 <script src="js/Dat.js"></script>
 <script src="js/Terrain.js"></script>
 
+<button onClick='goHex()'>Generate Hex</button>
+<button onClick='goSketch()'>Generate Sketch</button>
+<br/>
+
 <div class="example" id="final"></div>
 
 <script>
     var div = d3.select("div#final"),
-            w = 1000,
-            h = 1000,
-            svg = div.insert("svg", ":first-child")
-                    .attr("width", w)
-                    .attr("height", h)
-                    .attr("viewBox", "-" + w + "-" + h + " " + w * 2 + " " + h * 2),
-            opts = {
-                extent: {
-                    width: 1,
-                    height: 1
-                },
-                fontSizes: {
-                    region: 40,
-                    city: 25,
-                    town: 20
-                },
-                generator: generateCoastLine,
-                width: w,
-                height: h,
-                numPts: 18192,
-                numCities: 15,
-                numTerritories: 10,
-                seaLevel: 0
-            };
-    var map = new Map(opts, svg);
-    map.landscape = map.settings.generator(map.settings);
-    map.doMap();
-    datGUI(map);
+        width = 500,
+        height = 500,
+        zoom = d3.zoom(),
+        svg = div.insert("svg", ":first-child")
+                .attr("width", width).attr("height", height)
+//              .attr("viewBox", "-" + width + "-" + height + " " + width * 2 + " " + height * 2)
+                .attr('float', 'left').attr('background-color', 'white')
+                .call(zoom.on('zoom', function () {
+                    d3.select('g').attr('transform', d3.event.transform);
+                }).scaleExtent([0.5, 10]))
+                .append('g'),
+        map = {};
+
+    function goSketch() {
+        svg.select('g').selectAll('*').remove();
+        let opts = {
+            extent: {
+                width: 1,
+                height: 1
+            },
+            fontSizes: {
+                region: 40,
+                city: 25,
+                town: 20
+            },
+            generator: generateCoastLine,
+            width: width,
+            height: height,
+            numPts: 19256,
+            numCities: 10,
+            numTerritories: 5,
+            seaLevel: 0
+        };
+        map = new Map(opts, svg);
+        map.landscape = map.settings.generator(map.settings);
+        map.doMap();
+        datGUI(map);
+    }
+
+    function goHex() {
+        svg.select('g').selectAll('*').remove();
+
+        generateHex(svg, 0.5, 100);
+    }
 
 </script>
 </body>

@@ -1,110 +1,50 @@
 "use strict";
 
-let rNorm = (function () {
-  let z2 = null;
+let perlin = noise,
 
-  function rNorm() {
-    if (z2 != null) {
-      let tmp = z2;
-      z2 = null;
-      return tmp;
-    }
-    let x1 = 0,
-      x2 = 0,
-      w = 2.0;
-    while (w >= 1) {
-      x1 = runIf(-1, 1);
-      x2 = runIf(-1, 1);
-      w = x1 * x1 + x2 * x2;
-    }
-    w = Math.sqrt(-2 * Math.log(w) / w);
-    z2 = x2 * w;
-
-    return x1 * w;
-  }
-
-  return rNorm;
-})();
-
-let city_counts = {
-    'shore': (12, 20),
-    'island': (5, 10),
-    'mountain': (10, 25),
-    'desert': (5, 10)
-  },
-  terr_counts = {
-    'shore': (3, 7),
-    'island': (2, 4),
-    'mountain': (3, 6),
-    'desert': (3, 5)
-  },
-  riverpercs = {
-    'shore': 5,
-    'island': 3,
-    'mountain': 8,
-    'desert': 1
-  };
-
-// var timer = d3.timer(function (elapsed) {
-//   for (let i = 0; i < n; ++i) {
-//     let p = particles[i];
-//     p[0] += p.vx;
-//     if (p[0] < 0) p[0] = p.vx *= -1; else if (p[0] > width) p[0] = width + (p.vx *= -1);
-//     p[1] += p.vy;
-//     if (p[1] < 0) p[1] = p.vy *= -1; else if (p[1] > height) p[1] = height + (p.vy *= -1);
-//     p.vx += 0.1 * (Math.random() - 0.5) - 0.01 * p.vx;
-//     p.vy += 0.1 * (Math.random() - 0.5) - 0.01 * p.vy;
-//   }
-//
-//   let topology = computeTopology(voronoi(particles));
-//
-//   context.clearRect(0, 0, width, height);
-//
-//   context.beginPath();
-//   renderMultiLineString(context, topojson.mesh(topology, topology.objects.voronoi, function (a, b) {
-//     return a !== b;
-//   }));
-//   context.strokeStyle = "rgba(0,0,0,0.4)";
-//   context.lineWidth = 0.5;
-//   context.stroke();
-//
-//   particles.forEach(function (p, i) {
-//     context.beginPath();
-//     context.arc(p[0], p[1], 2.5, 0, 2 * Math.PI);
-//     context.fillStyle = i & 1 ? "rgba(255,0,0,1)" : "rgba(0,0,0,0.6)";
-//     context.fill();
-//   });
-//
-//   context.beginPath();
-//   renderMultiPolygon(context, topojson.merge(topology, topology.objects.voronoi.geometries.filter(function (d, i) {
-//     return i & 1;
-//   })));
-//   context.fillStyle = "rgba(255,0,0,0.1)";
-//   context.fill();
-//   context.lineWidth = 1.5;
-//   context.lineJoin = "round";
-//   context.strokeStyle = "rgba(255,0,0,1)";
-//   context.stroke();
-// });
-
-const
   /**
-   * Default font sizes for the map
    *
-   * @typedef {object} fontSizeObject
-   * @property {number} region
-   * @property {number} city
-   * @property {number} town
    */
-  fontSizeObject = {
+  rNorm = (function () {
+    let z2 = null;
+
+    function rNorm() {
+      if (z2 != null) {
+        let tmp = z2;
+        z2 = null;
+        return tmp;
+      }
+      let x1 = 0,
+        x2 = 0,
+        w = 2.0;
+      while (w >= 1) {
+        x1 = runIf(-1, 1);
+        x2 = runIf(-1, 1);
+        w = x1 * x1 + x2 * x2;
+      }
+      w = Math.sqrt(-2 * Math.log(w) / w);
+      z2 = x2 * w;
+
+      return x1 * w;
+    }
+
+    return rNorm;
+  })();
+
+/**
+ * Default font sizes for the map
+ * @typedef {object} fontSizeObject
+ * @property {number} region
+ * @property {number} city
+ * @property {number} town
+ */
+const fontSizeObject = {
     region: 40,
     city: 25,
     town: 20
   },
-
   /**
    * Extent Object
-   *
    * @typedef {object} extentObject
    * @property {number} width
    * @property {number} height
@@ -113,10 +53,8 @@ const
     width: 1,
     height: 1
   },
-
   /**
    * Scale Object
-   *
    * @typedef {object} scaleObject
    * @property {number} width
    * @property {number} height
@@ -125,10 +63,8 @@ const
     width: 1000,
     height: 1000
   },
-
   /**
    * Default options for the map generator
-   *
    * @typedef {object} paramsObject
    * @property {extentObject} extent
    * @property {function} generator
@@ -149,10 +85,8 @@ const
     numCities: 15,
     numTerritories: 5
   },
-
   /**
    * Mesh object
-   *
    * @typeDef {object} meshObject
    * @property {Array} adj
    * @property {Array} edges
@@ -172,11 +106,71 @@ const
     tris: [],
     vor: {},
     vxs: []
-  };
+  },
+  /**
+   * Landscape Object
+   * @typeDef {Array} landscapeObject
+   * @property {meshObject} mesh
+   */
+  landscapeObject = [{
+    mesh: meshObject
+  }];
+
+/**
+ *
+ * @param {number} gradIntensity
+ * @param {number} perlIntensity
+ */
+function generateHex(svg, gradIntensity = 1, perlIntensity = 50) {
+  let l = 100,
+    grid = Hex.getGrid(l),
+    hl = Math.floor(l / 2),
+    center = grid[hl][hl],
+    circles = [],
+    color = 0,
+    width = 10,
+    height = width * Math.sqrt(3) / 2,
+    radius = width / 2;
+
+  for (let i = 1; i <= hl; i += 1) {
+    circles[i] = Hex.getRing(center, i);
+  }
+
+  let gradient = Hex.getGradientColors(grid, circles, gradIntensity),
+    perlinC = Hex.getPerlinColors(grid, perlIntensity);
+
+  for (let i = 0; i < grid.length; i += 1) {
+    for (let j = 0; j < grid[i].length; j += 1) {
+      let x = width * 3 / 4 * (i + 1),
+        y = (i % 2 !== 0) ? (radius * Math.sqrt(3) / 2 + height * j) : height * j,
+        colorValue = perlinC[i][j] + gradient[i][j];
+
+      if (colorValue < 50) {
+        color = '#567A32';
+      } else if (colorValue < 100) {
+        color = '#78ab46';
+      } else if (colorValue < 150) {
+        color = '#bced91';
+      } else if (colorValue < 180) {
+        color = '#dbd1b4';
+      } else {
+        color = '#b4d2db';
+      }
+
+      svg.select('g')
+        .append('polygon')
+        .attr('points', Hex.getHexagonPoints(x, y, radius))
+        .attr('fill', color)
+        .attr('stroke', 'grey')
+        .attr('stroke-width', 0.5);
+    }
+  }
+}
 
 /**
  *
  * @param {paramsObject} params
+ * @return {landscapeObject} landscape
  */
 function generateCoastLine(params = paramsObject) {
   let mesh = Mesh.generateGoodMesh(params.numPts, params.extent),
@@ -200,7 +194,7 @@ function generateCoastLine(params = paramsObject) {
 
 /**
  *
- * @param params
+ * @param {paramsObject} params
  */
 function generateLake(params = paramsObject) {
   let mesh = Mesh.generateGoodMesh(params.numPts, params.extent),
@@ -224,9 +218,9 @@ function generateLake(params = paramsObject) {
 
 /**
  *
- * @param params
+ * @param {paramsObject} params
  */
-function generateIsland(params = paramsObject) {
+function generateIslands(params = paramsObject) {
   let mesh = Mesh.generateGoodMesh(params.numPts, params.extent),
 
     landscape = add(
@@ -247,74 +241,29 @@ function generateIsland(params = paramsObject) {
   return landscape;
 }
 
-// function computeTopology(diagram) {
-//   let cells = diagram.cells,
-//     arcs = [],
-//     arcIndex = -1,
-//     arcIndexByEdge = {};
-//
-//   return {
-//     objects: {
-//       voronoi: {
-//         type: "GeometryCollection",
-//         geometries: cells.map((cell) => {
-//           let site = cell.site,
-//             halfEdges = cell.halfedges,
-//             cellArcs = [],
-//             clipArc;
-//
-//           halfEdges.forEach(function (halfedge) {
-//             let edge = diagram.edges[halfedge];
-//             if (edge.right) {
-//               let l = edge.left.index,
-//                 r = edge.right.index,
-//                 k = l + "," + r,
-//                 i = arcIndexByEdge[k];
-//               if (i == null) {
-//                 arcs[i = arcIndexByEdge[k] = ++arcIndex] = edge;
-//               }
-//               cellArcs.push(site === edge.left ? i : ~i);
-//               clipArc = null;
-//             } else if (clipArc) {
-//               // Coalesce border edges.
-//               if (edge.left) {
-//                 // Copy-on-write.
-//                 edge = edge.slice();
-//               }
-//               clipArc.push(edge[1]);
-//             } else {
-//               arcs[++arcIndex] = clipArc = edge;
-//               cellArcs.push(arcIndex);
-//             }
-//           });
-//
-//           // Ensure the last point in the polygon is identical to the first point.
-//           let firstArcIndex = cellArcs[0],
-//             lastArcIndex = cellArcs[cellArcs.length - 1],
-//             firstArc = arcs[firstArcIndex < 0 ? ~firstArcIndex : firstArcIndex],
-//             lastArc = arcs[lastArcIndex < 0 ? ~lastArcIndex : lastArcIndex];
-//           lastArc[lastArcIndex < 0 ? 0 : lastArc.length - 1] = firstArc[firstArcIndex < 0 ? firstArc.length - 1 : 0].slice();
-//
-//           return {
-//             type: "Polygon",
-//             data: site.data,
-//             arcs: [cellArcs]
-//           };
-//         })
-//       }
-//     },
-//     arcs: arcs
-//   };
-// }
-
+/**
+ *
+ * @param {number} scale
+ * @return {[*,*]}
+ */
 function randomVector(scale) {
   return [scale * rNorm(), scale * rNorm()];
 }
 
+/**
+ *
+ * @param {number} lo
+ * @param {number} hi
+ * @return {*}
+ */
 function runIf(lo, hi) {
   return lo + Math.random() * (hi - lo);
 }
 
+/**
+ *
+ * @return {landscapeObject}
+ */
 function add() {
   let n = arguments[0].length,
     newVals = Mesh.zero(arguments[0].mesh);
@@ -327,17 +276,322 @@ function add() {
   return newVals;
 }
 
+/**
+ * @class Hex
+ */
+class Hex {
+
+  /**
+   *
+   * @param {number} x
+   * @param {number} y
+   * @param {number} z
+   * @returns {Hex}
+   */
+  constructor(x = 0, y = 0, z = 0) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+
+    return this;
+  }
+
+  /**
+   *
+   * @param {number} x
+   * @param {number} y
+   * @param {number} z
+   * @returns {Hex}
+   */
+  static create(x, y, z) {
+    return new Hex(x, y, z);
+  }
+
+  /**
+   *
+   * @param {Hex} a
+   * @param {Hex} b
+   * @return {*|Hex}
+   */
+  static add(a, b) {
+    return Hex.create(a.x + b.x, a.y + b.y, a.z + b.z);
+  }
+
+  /**
+   *
+   * @param {Hex} a
+   * @param {number} k
+   * @return {*|Hex}
+   */
+  static scale(a, k) {
+    return Hex.create(a.x * k, a.y * k, a.z * k);
+  }
+
+  /**
+   *
+   * @param {Hex} hex
+   * @param {number} direction
+   * @return {*|Hex}
+   */
+  static getNeighbour(hex, direction) {
+    return Hex.add(hex, Hex.getDirection(direction));
+  }
+
+  /**
+   *
+   * @param {number} direction
+   * @return {*}
+   */
+  static getDirection(direction) {
+    let directions = [
+      Hex.create(1, 0, -1),
+      Hex.create(1, -1, 0),
+      Hex.create(0, -1, 1),
+      Hex.create(-1, 0, 1),
+      Hex.create(-1, 1, 0),
+      Hex.create(0, 1, -1)
+    ];
+
+    return directions[direction];
+  }
+
+  /**
+   *
+   * @param {Hex} hex
+   * @return {[Hex]}
+   */
+  static getAllNeighbours(hex) {
+    return [
+      Hex.getNeighbour(hex, 0),
+      Hex.getNeighbour(hex, 1),
+      Hex.getNeighbour(hex, 2),
+      Hex.getNeighbour(hex, 3),
+      Hex.getNeighbour(hex, 4),
+      Hex.getNeighbour(hex, 5)
+    ];
+  }
+
+  /**
+   *
+   * @param {number} col
+   * @param {number} row
+   * @return {*}
+   */
+  static convertOffsetToCube(col, row) {
+    var x = col,
+      z = (col % 2 === 0) ? row - (col + 1) / 2 : row - col / 2,
+      y = -x - z;
+
+    return Hex.round(Hex.create(x, y, z));
+  }
+
+  /**
+   *
+   * @param {Hex} hex
+   * @return {*|Hex}
+   */
+  static round(hex) {
+    var x = Math.trunc(Math.round(hex.x)),
+      y = Math.trunc(Math.round(hex.y)),
+      z = Math.trunc(Math.round(hex.z)),
+      xDiff = Math.abs(x - hex.x),
+      yDiff = Math.abs(y - hex.y),
+      zDiff = Math.abs(z - hex.z);
+
+    if (xDiff > yDiff && xDiff > zDiff) {
+      x = -y - z;
+    } else {
+      if (yDiff > zDiff) {
+        y = -x - z;
+      } else {
+        z = -x - y;
+      }
+    }
+    return Hex.create(x, y, z);
+  }
+
+  /**
+   *
+   * @param {Hex} a
+   * @param {Hex} b
+   * @return {Array}
+   */
+  static getLinedraw(a, b) {
+    let distance = Hex.getDistance(a, b),
+      results = [],
+      step = 1.0 / Math.max(distance, 1),
+      i;
+
+    for (i = 0; i <= distance; i += 1) {
+      results.push(Hex.round(Hex.lerp(a, b, step * i)));
+    }
+
+    return results;
+  }
+
+  /**
+   *
+   * @param {Hex} a
+   * @param {Hex} b
+   * @return {*}
+   */
+  static getDistance(a, b) {
+    return Hex.getLength(Hex.subtract(a, b));
+  }
+
+  /**
+   *
+   * @param {Hex} a
+   * @param {Hex} b
+   * @return {*|Hex}
+   */
+  static subtract(a, b) {
+    return Hex.create(a.x - b.x, a.y - b.y, a.z - b.z);
+  }
+
+  /**
+   *
+   * @param {Hex} hex
+   * @return {number}
+   */
+  static getLength(hex) {
+    return Math.trunc((Math.abs(hex.x) + Math.abs(hex.y) + Math.abs(hex.z)) / 2);
+  }
+
+  /**
+   *
+   * @param {Hex} a
+   * @param {Hex} b
+   * @param {number} t
+   * @return {*|Hex}
+   */
+  static lerp(a, b, t) {
+    return Hex.create(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t);
+  }
+
+  /**
+   *
+   * @param {number} center
+   * @param {number} radius
+   * @return {Array}
+   */
+  static getRing(center, radius) {
+    let results = [],
+      cube = Hex.add(center, Hex.scale(Hex.create(-1, 1, 0), radius));
+    for (let i = 0; i < 6; i += 1) {
+      for (let j = 0; j < radius; j += 1) {
+        results.push(cube);
+        cube = Hex.getNeighbour(cube, i);
+      }
+    }
+    return results;
+  }
+
+  /**
+   *
+   * @param {number} l
+   * @return {Array}
+   */
+  static getGrid(l) {
+    let grid = [];
+    for (let i = 0; i < l; i += 1) {
+      grid[i] = [];
+      for (let j = 0; j < l; j += 1) {
+        grid[i][j] = Hex.convertOffsetToCube(i, j);
+      }
+    }
+    return grid;
+  }
+
+  /**
+   *
+   * @param {Array} grid
+   * @param {Array} circles
+   * @param {number} intensity
+   * @return {Array}
+   */
+  static getGradientColors(grid, circles, intensity = 1) {
+    let colors = [];
+
+    for (let i = 0; i < grid.length; i += 1) {
+      colors[i] = [];
+      for (let j = 0; j < grid[i].length; j += 1) {
+        let color = 255 * intensity,
+          iZ = i === Math.floor(grid.length / 2),
+          jZ = j === Math.floor(grid[i].length / 2);
+
+        if (iZ && jZ) {
+          color = 0;
+        } else {
+          for (let ci = 1; ci < circles.length; ci += 1) {
+            for (let cj = 0; cj < circles[ci].length; cj += 1) {
+              let cir = circles[ci][cj],
+                grd = grid[i][j];
+              if (cir.x === grd.x && cir.y === grd.y && cir.z === grd.z) {
+                color = Math.round(255 - (circles.length - ci) * 255 / circles.length) * intensity;
+              }
+            }
+          }
+        }
+        colors[i][j] = color;
+      }
+    }
+    return colors;
+  }
+
+  /**
+   *
+   * @param {Array} grid
+   * @param {number} intensity
+   * @return {Array}
+   */
+  static getPerlinColors(grid, intensity = 50) {
+    let colors = [];
+    noise.seed(Math.random());
+
+    for (let i = 0; i < grid.length; i += 1) {
+      colors[i] = [];
+      for (let j = 0; j < grid[i].length; j += 1) {
+        let value = noise.simplex2(i / intensity, j / intensity);
+        value *= 256;
+
+        colors[i][j] = Math.round(Math.abs(value));
+      }
+    }
+
+    return colors;
+  }
+
+  /**
+   *
+   * @param {number} x
+   * @param {number} y
+   * @param {number} radius
+   * @return {Array}
+   */
+  static getHexagonPoints(x, y, radius) {
+    let points = [];
+    for (let i = 0; i < 6; i += 1) {
+      let angleDeg = 60 * i,
+        angleRad = Math.PI / 180 * angleDeg,
+        pointX = x + radius * Math.cos(angleRad),
+        pointY = y + radius * Math.sin(angleRad);
+      points.push([pointX, pointY]);
+    }
+
+    return points;
+  }
+};
 
 /**
- *
+ * @class Mesh
  */
 class Mesh {
 
   /**
    * The point where the three medians of the triangle intersect
-   *
    * @param {Array} pts
-   * @returns {*[]}
+   * @return {*[]}
    */
   static centroid(pts) {
     let x = 0, y = 0;
@@ -354,10 +608,9 @@ class Mesh {
    * a filter where points which are below sea level, but a majority of
    * whose neighbors are above sea level, get pulled up, and vice versa
    * for points which are above sea level and have undersea neighbors.
-   *
-   * @param {object} landscape
+   * @param {landscapeObject} landscape
    * @param {number} iterations
-   * @returns {*}
+   * @return {*}
    */
   static cleanCoast(landscape, iterations) {
     for (let it = 0; it < iterations; it++) {
@@ -417,7 +670,6 @@ class Mesh {
 
   /**
    * Generate a cone or an inverted cone to make a hole
-   *
    * @param {meshObject} mesh
    * @param {number} slope
    */
@@ -429,10 +681,9 @@ class Mesh {
 
   /**
    * Generate a contoured path at a specific level
-   *
-   * @param {object} landscape
+   * @param {landscapeObject} landscape
    * @param {number} level
-   * @returns {Array}
+   * @return {Array}
    */
   static contour(landscape, level = 0) {
     let edges = [];
@@ -459,11 +710,10 @@ class Mesh {
 
   /**
    * Get the distance between two points in the mesh?
-   *
    * @param {meshObject} mesh
    * @param {number} i
    * @param {number} j
-   * @returns {number}
+   * @return {number}
    */
   static distance(mesh, i, j) {
     let p = mesh.vxs[i],
@@ -474,11 +724,10 @@ class Mesh {
 
   /**
    * Erode the coast line of the landscape
-   *
-   * @param {object} landscape
+   * @param {landscapeObject} landscape
    * @param {number} amount
    * @param {number} n
-   * @returns {object} landscape
+   * @return {landscapeObject} landscape
    */
   static doErosion(landscape, amount = 0.1, n = 1) {
     landscape = Mesh.fillSinks(landscape);
@@ -492,9 +741,8 @@ class Mesh {
 
   /**
    * Generate the hills for the rivers?
-   *
-   * @param {object} landscape
-   * @returns {Array} downs
+   * @param {landscapeObject} landscape
+   * @return {Array} downs
    */
   static downhill(landscape) {
     if (landscape.downhill) {
@@ -505,7 +753,7 @@ class Mesh {
       if (Mesh.isEdge(landscape.mesh, i)) {
         return -2;
       }
-      let best = -1,
+      var best = -1,
         bestH = landscape[i],
         nbs = Mesh.neighbors(landscape.mesh, i);
       for (let j = 0; j < nbs.length; j++) {
@@ -529,9 +777,9 @@ class Mesh {
 
   /**
    *
-   * @param {object} landscape
+   * @param {landscapeObject} landscape
    * @param {number} p
-   * @returns {object} newH
+   * @return {meshObject} newH
    */
   static dropEdge(landscape, p) {
     p = p || 4;
@@ -548,10 +796,9 @@ class Mesh {
 
   /**
    * Generate a new landscape with eroded coast lines?
-   *
-   * @param {object} landscape
+   * @param {landscapeObject} landscape
    * @param {number} amount
-   * @returns {meshObject} newH
+   * @return {meshObject} newH
    */
   static erode(landscape, amount) {
     let er = Mesh.erosionRate(landscape),
@@ -566,9 +813,8 @@ class Mesh {
 
   /**
    * Set and erode the landscape rate?
-   *
-   * @param {object} landscape
-   * @returns {meshObject} newH
+   * @param {landscapeObject} landscape
+   * @return {meshObject} newH
    */
   static erosionRate(landscape) {
     let flux = Mesh.getFlux(landscape),
@@ -587,10 +833,9 @@ class Mesh {
 
   /**
    * Planchon-Darboux algorithm
-   *
-   * @param {object} landscape
+   * @param {landscapeObject} landscape
    * @param {number} epsilon
-   * @returns {meshObject} newH
+   * @return {meshObject} newH
    */
   static fillSinks(landscape, epsilon = 1e-5) {
     let infinity = 999999,
@@ -631,7 +876,7 @@ class Mesh {
 
   /**
    *
-   * @param {object} landscape
+   * @param {landscapeObject} landscape
    */
   static findSinks(landscape) {
     let dh = Mesh.downhill(landscape),
@@ -656,11 +901,9 @@ class Mesh {
    *
    * @param {number} n
    * @param {extentObject} extent
-   * @returns {meshObject}
+   * @return {meshObject}
    */
-  static generateGoodMesh(n, extent) {
-    n = n || 1;
-    extent = extent || extentObject;
+  static generateGoodMesh(n = 1, extent = extentObject) {
     let pts = Mesh.generateGoodPoints(n, extent);
 
     return Mesh.makeMesh(pts, extent);
@@ -670,11 +913,10 @@ class Mesh {
    *
    * @param {number} n
    * @param {extentObject} extent
-   * @returns {Array}
+   * @return {Array}
    */
-  static generateGoodPoints(n, extent) {
-    n = n || 1;
-    extent = extent || extentObject;
+  static generateGoodPoints(n = 1, extent = extentObject) {
+    // let pts = Mesh.generatePerlinNoise(n, extent, {width: 1000, height: 1000});
     let pts = Mesh.generatePoints(n, extent);
     pts = pts.sort(function (a, b) {
       return a[0] - b[0];
@@ -685,18 +927,48 @@ class Mesh {
 
   /**
    *
+   * @param n
+   * @param extent
+   * @param scale
+   * @return {Array}
+   */
+  static generatePerlinNoise(n = 1, extent = extentObject, scale = scaleObject) {
+    let pts = [],
+      max = -Infinity,
+      min = Infinity,
+      w = scale.width / 2,
+      h = scale.height / 2;
+    for (let x = 0; x < w; x++) {
+      for (let y = 0; y < h; y++) {
+        let value = perlin.simplex3(w / 100, h / 100, extent.height);
+        if (max < value) {
+          max = value;
+        }
+        if (min > value) {
+          min = value;
+        }
+        let xP = (Math.random() - value) * extent.width,
+          yP = (Math.random() - value) * extent.height;
+        pts.push([xP, yP]);
+      }
+    }
+    return pts;
+  }
+
+  /**
+   *
    * @param {number} n
    * @param {extentObject} extent
-   * @returns {Array} pts
+   * @return {Array} pts
    */
-  static generatePoints(n, extent) {
-    n = n || 1;
-    extent = extent || extentObject;
+  static generatePoints(n = 1, extent = extentObject) {
     let pts = [];
     for (let i = 0; i < n; i++) {
+      let x = (Math.random() - 0.5),
+        y = (Math.random() - 0.5);
       pts.push([
-        (Math.random() - 0.5) * extent.width,
-        (Math.random() - 0.5) * extent.height
+        x * extent.width,
+        y * extent.height
       ]);
     }
 
@@ -705,9 +977,8 @@ class Mesh {
 
   /**
    * Get the water flux from each point to its 'downhill point'.
-   *
-   * @param {object} landscape
-   * @returns {meshObject} flux
+   * @param {landscapeObject} landscape
+   * @return {meshObject} flux
    */
   static getFlux(landscape) {
     let dh = Mesh.downhill(landscape),
@@ -735,9 +1006,8 @@ class Mesh {
 
   /**
    * Get the slope values
-   *
-   * @param {object} landscape
-   * @returns {meshObject} slope
+   * @param {landscapeObject} landscape
+   * @return {meshObject} slope
    */
   static getSlope(landscape) {
     let dh = Mesh.downhill(landscape),
@@ -760,11 +1030,9 @@ class Mesh {
    * @param {Array} pts
    * @param {number} n
    * @param {extentObject} extent
-   * @returns {Array} pts
+   * @return {Array} pts
    */
-  static improvePoints(pts, n, extent) {
-    n = n || 1;
-    extent = extent || extentObject;
+  static improvePoints(pts, n = 1, extent = extentObject) {
     for (let i = 0; i < n; i++) {
       pts = Mesh.voronoi(pts, extent).polygons(pts).map(Mesh.centroid);
     }
@@ -776,7 +1044,7 @@ class Mesh {
    * Check if it is an edge
    * @param {meshObject} mesh
    * @param {number} i
-   * @returns {boolean}
+   * @return {boolean}
    */
   static isEdge(mesh, i) {
     return (mesh.adj[i].length < 3);
@@ -786,7 +1054,7 @@ class Mesh {
    * Check if it is near an edge
    * @param {meshObject} mesh
    * @param {number} i
-   * @returns {boolean}
+   * @return {boolean}
    */
   static isNearEdge(mesh, i) {
     let x = mesh.vxs[i][0],
@@ -801,7 +1069,7 @@ class Mesh {
    *
    * @param {Array} points
    * @param {extentObject} extent
-   * @returns {meshObject} mesh
+   * @return {meshObject} mesh
    */
   static makeMesh(points, extent) {
     let voronoi = Mesh.voronoi(points, extent),
@@ -873,9 +1141,9 @@ class Mesh {
 
   /**
    *
-   * @param {object} landscape
+   * @param {landscapeObject} landscape
    * @param {function} f
-   * @returns {object} newH
+   * @return {object} newH
    */
   static map(landscape, f) {
     let newH = landscape.map(f);
@@ -887,7 +1155,7 @@ class Mesh {
   /**
    *
    * @param {Array} segments
-   * @returns {Array} paths
+   * @return {Array} paths
    */
   static mergeSegments(segments) {
     let adj = {};
@@ -946,11 +1214,10 @@ class Mesh {
 
   /**
    * Generate some mountains
-   *
    * @param {meshObject} mesh
    * @param {number} number
    * @param {number} radius
-   * @returns {Array} newVals
+   * @return {Array} newVals
    */
   static mountains(mesh, number, radius = 0.05) {
     let mounts = [],
@@ -976,7 +1243,7 @@ class Mesh {
    *
    * @param {meshObject} mesh
    * @param {number} i
-   * @returns {Array} nbs
+   * @return {Array} nbs
    */
   static neighbors(mesh, i) {
     let onbs = mesh.adj[i],
@@ -990,9 +1257,8 @@ class Mesh {
 
   /**
    * Rescale the heights to lie in the range 0-1
-   *
-   * @param {object} landscape
-   * @returns {*}
+   * @param {landscapeObject} landscape
+   * @return {*}
    */
   static normalize(landscape) {
     let lo = d3.min(landscape),
@@ -1006,9 +1272,8 @@ class Mesh {
   /**
    * Normalize, then take the square root of the height value
    * to round off the tops of hills
-   *
-   * @param {object} landscape
-   * @returns {*}
+   * @param {landscapeObject} landscape
+   * @return {*}
    */
   static peaky(landscape) {
     return Mesh.map(Mesh.normalize(landscape), Math.sqrt);
@@ -1016,9 +1281,9 @@ class Mesh {
 
   /**
    *
-   * @param {object} landscape
+   * @param {landscapeObject} landscape
    * @param {number} q
-   * @returns {number}
+   * @return {number}
    */
   static quantile(landscape, q) {
     let sortedH = [];
@@ -1033,9 +1298,8 @@ class Mesh {
   /**
    * Replace each height value with the average of its neighbours
    * to smooth the surface
-   *
-   * @param {object} landscape
-   * @returns {meshObject} newH
+   * @param {landscapeObject} landscape
+   * @return {meshObject} newH
    */
   static relax(landscape) {
     let newH = Mesh.zero(landscape.mesh);
@@ -1056,9 +1320,8 @@ class Mesh {
   /**
    * Relax the points in the middle of the path towards their upstream
    * and downstream neighbors
-   *
    * @param {Array} path
-   * @returns {Array} newPath
+   * @return {Array} newPath
    */
   static relaxPath(path) {
     let newPath = [path[0]];
@@ -1077,10 +1340,9 @@ class Mesh {
   /**
    * Translate the height map up or down so that a particular
    * quantile is at zero
-   *
-   * @param {object} landscape
+   * @param {landscapeObject} landscape
    * @param {number} q
-   * @returns {meshObject} newH
+   * @return {meshObject} newH
    */
   static setSeaLevel(landscape, q) {
     let newH = Mesh.zero(landscape.mesh),
@@ -1096,7 +1358,6 @@ class Mesh {
   /**
    * Generate a constant slope think of it as tectonic
    * uplift on one side of the map
-   *
    * @param {meshObject} mesh
    * @param {Array} direction
    */
@@ -1108,9 +1369,9 @@ class Mesh {
 
   /**
    *
-   * @param {object} landscape
+   * @param {landscapeObject} landscape
    * @param {number} i
-   * @returns {*[]}
+   * @return {*[]}
    */
   static triSlope(landscape, i) {
     let nbs = Mesh.neighbors(landscape.mesh, i);
@@ -1140,7 +1401,7 @@ class Mesh {
    *
    * @param {Array} pts
    * @param {extentObject} extent
-   * @returns {d3.voronoi} v
+   * @return {d3.voronoi} v
    */
   static voronoi(pts, extent) {
     let w = extent.width / 2,
@@ -1152,7 +1413,7 @@ class Mesh {
   /**
    *
    * @param {meshObject} mesh
-   * @returns {object} z
+   * @return {landscapeObject} z
    */
   static zero(mesh) {
     let z = [];
@@ -1167,7 +1428,7 @@ class Mesh {
 }
 
 /**
- *
+ * @class Map
  */
 class Map {
 
@@ -1175,7 +1436,7 @@ class Map {
    *
    * @param {paramsObject} params
    * @param {ID3Selection} svg
-   * @returns {Map}
+   * @return {Map}
    */
   constructor(params, svg) {
     this.settings = params || paramsObject;
@@ -1199,6 +1460,7 @@ class Map {
     this.viewScores = false;
     this.viewSlopes = true;
     this.viewPoints = false;
+    this.viewErosionRate = false;
 
     /**
      * Landscape functions
@@ -1213,9 +1475,9 @@ class Map {
         this.landscape = generateCoastLine(this.settings);
         this.doMap();
       },
-      newIsland: () => {
+      newIslands: () => {
         this.clearMap();
-        this.landscape = generateIsland(this.settings);
+        this.landscape = generateIslands(this.settings);
         this.doMap();
       },
       newLake: () => {
@@ -1342,8 +1604,6 @@ class Map {
       }
     };
 
-    this.svg.attr('float', 'left').attr('background-color', 'white');
-
     return this;
   }
 
@@ -1366,8 +1626,7 @@ class Map {
    * Distance from the edge of the map - the other two criteria alone tend to push
    *  cities to the map edge, which isn't ideal, so penalize locations too close to
    *  the edge
-   *
-   * @returns {object} score
+   * @return {object} score
    */
   cityScore() {
     let score = Mesh.map(Mesh.getFlux(this.landscape), Math.sqrt);
@@ -1388,8 +1647,7 @@ class Map {
 
   /**
    * Clear the map
-   *
-   * @returns {Map}
+   * @return {Map}
    */
   clearMap() {
     this.borders = [];
@@ -1400,14 +1658,14 @@ class Map {
     this.cityLabels = [];
     this.regionLabels = [];
     this.landscape = Mesh.zero(Mesh.generateGoodMesh(this.settings.numPts, this.settings.extent));
+    this.svg.select('g').selectAll('*').remove();
 
     return this;
   }
 
   /**
    * Generate all the coasts, borders, cities etc and draw them
-   *
-   * @returns {Map}
+   * @return {Map}
    */
   doMap() {
     this.getRivers(this.landscape, 0.01);
@@ -1424,10 +1682,9 @@ class Map {
 
   /**
    * Draw the cities
-   *
    * @param {string} cls
    * @param {Array} pts
-   * @returns {Map}
+   * @return {Map}
    */
   drawCircles(cls, pts) {
     let circles = this.svg.selectAll('circle.' + cls).data(pts);
@@ -1455,10 +1712,9 @@ class Map {
 
   /**
    * Draw the labels for regions and cities
-   *
    * @param {string} cls
    * @param {Array} pts
-   * @returns {Map}
+   * @return {Map}
    */
   drawLabels(cls, pts) {
     let cityTexts = this.svg.selectAll('text.city').data(this.cityLabels);
@@ -1519,24 +1775,17 @@ class Map {
 
   /**
    * Draw the map and all the details
-   *
-   * @returns {Map}
+   * @return {Map}
    */
   drawMap() {
     this.drawPaths('river', this.viewRivers ? this.rivers : []);
     this.drawPaths('coast', this.viewCoasts ? this.coasts : []);
     this.drawPaths('border', this.viewBorders ? this.borders : []);
-    this.drawSlopes(this.viewSlopes ? this.landscape : Mesh.zero(this.landscape.mesh));
     this.drawCircles('city', this.viewCities ? this.cities : []);
-    this.drawLabels(this.viewLabels ? this.cityLabels : []);
-    this.drawLabels(this.viewLabels ? this.regionLabels : []);
-
-    if (this.viewPoints) {
-      this.drawPoints(this.viewPoints ? this.landscape.mesh.pts : []);
-    }
-    if (this.viewHeight) {
-      this.drawVoronoi(this.landscape, -1, 1);
-    }
+    this.drawLabels('city', this.viewLabels ? this.cityLabels : []);
+    this.drawSlopes(this.viewSlopes ? this.landscape : Mesh.zero(this.landscape.mesh));
+    // this.drawPoints(this.viewPoints ? this.landscape.mesh.pts : []);
+    this.drawVoronoi(this.viewHeight ? this.landscape : Mesh.zero(this.landscape.mesh), -1, 1);
 
     if (this.viewErosionRate) {
       this.drawVoronoi(Mesh.erosionRate(this.landscape));
@@ -1551,10 +1800,9 @@ class Map {
 
   /**
    * Draw the path of points for the passed in class, river, coast etc.
-   *
    * @param {string} cls
    * @param {Array} pts
-   * @returns {Map}
+   * @return {Map}
    */
   drawPaths(cls, pts) {
     let svgPaths = this.svg.selectAll('path.' + cls).data(pts);
@@ -1591,15 +1839,14 @@ class Map {
 
   /**
    * Draw the points of the map, mainly a way to see the underlying mesh points
-   *
    * @param {Array} pts
-   * @returns {Map}
+   * @return {Map}
    */
   drawPoints(pts) {
     let circle = this.svg.selectAll('circle').data(pts);
     circle.enter().append('circle');
     circle.exit().remove();
-    d3.selectAll('circle')
+    this.svg.selectAll('circle')
       .attr('cx', function (d) {
         return 1000 * d[0];
       })
@@ -1626,13 +1873,13 @@ class Map {
    * left to right, and down and right if the terrain slopes downwards.
    * Similarly, the strokes on the 'near' side of hills should be longer than
    * those on the 'far' side.
-   *
    * @param {object} landscape
-   * @returns {Map}
+   * @return {Map}
    */
   drawSlopes(landscape) {
     let strokes = [],
-      r = 0.25 / Math.sqrt(landscape.length);
+      r = 0.25 / Math.sqrt(landscape.length),
+      svgBase = this.svg.select('g');
     for (let i = 0; i < landscape.length; i++) {
       if (landscape[i] <= 0 || Mesh.isNearEdge(landscape.mesh, i)) {
         continue;
@@ -1697,7 +1944,6 @@ class Map {
 
   /**
    * Draw the points as triangles and colors indicating height
-   *
    * @param {object} landscape
    * @param {number|null} lo
    * @param {number|null} hi
@@ -1728,10 +1974,9 @@ class Map {
 
   /**
    * Generate and set the borders for the landscape
-   *
    * @param {object} landscape
    * @param {object} territories
-   * @returns {Map}
+   * @return {Map}
    */
   getBorders(landscape, territories) {
     let edges = [];
@@ -1758,8 +2003,7 @@ class Map {
 
   /**
    * Generate and set the cities for the landscape
-   *
-   * @returns {Map}
+   * @return {Map}
    */
   getCities() {
     let n = this.settings.numCities;
@@ -1774,9 +2018,8 @@ class Map {
 
   /**
    * Generate and set the coasts for the landscape
-   *
    * @param {object} landscape
-   * @returns {Map}
+   * @return {Map}
    */
   getCoasts(landscape) {
     this.coasts = Mesh.contour(landscape, 0);
@@ -1786,9 +2029,8 @@ class Map {
 
   /**
    * Generate and set the labels for the landscape
-   *
    * @param {object} landscape
-   * @returns {Map}
+   * @return {Map}
    */
   getLabels(landscape) {
     let numTer = this.settings.numTerritories,
@@ -1971,10 +2213,9 @@ class Map {
 
   /**
    * Generate and set the rivers for the landscape
-   *
    * @param {object} landscape
    * @param {number} limit
-   * @returns {Map}
+   * @return {Map}
    */
   getRivers(landscape, limit = 0.01) {
     let dh = Mesh.downhill(landscape),
@@ -2021,8 +2262,7 @@ class Map {
    * Water flux - crossing a river is expensive
    * Shorelines - there is a large penalty for going from land to water (or vice versa)
    *  and a smaller penalty for travelling by water
-   *
-   * @returns {Map}
+   * @return {Map}
    */
   getTerritories(landscape) {
     this.territories = [];
@@ -2095,11 +2335,10 @@ class Map {
 
   /**
    * Find the center of a territory
-   *
    * @param {object} terr
    * @param {object} city
    * @param {boolean} landOnly
-   * @returns {*[]}
+   * @return {*[]}
    */
   getTerritoryCenter(terr, city, landOnly) {
     let x = 0, y = 0, n = 0;
@@ -2120,7 +2359,6 @@ class Map {
 
   /**
    * Make a set of d3 coordinates for a path
-   *
    * @param {Array} path
    * @return {string}
    */
