@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>Map</title>
+    <style>
+        body {
+            display: block;
+            margin: 0;
+            padding: 0;
+        }
+
+        #island {
+            display: block;
+        }
+    </style>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.10.2/paper-full.js"></script>
+    <script type="text/javascript" src="js/external/rhill-voronoi-core.min.js"></script>
+    <script type="text/javascript" src="js/external/Simplex.js"></script>
+    <script type="text/javascript" src="js/external/perlin.js"></script>
+    <script type="text/javascript" src="js/Vec.js"></script>
+    <script type="text/javascript" src="js/Island.js"></script>
+</head>
+
+<body>
+<canvas id="island" resize="true"></canvas>
+<canvas id="perlin" hidden="true"></canvas>
+
+<script type="application/javascript">
+  paper.install(window);
+
+  window.onload = function (e) {
+    let island = new Island(),
+     islandCanvas = document.getElementById('island'),
+     perlinCanvas = document.getElementById('perlin');
+    paper.setup('island');
+
+    islandCanvas.onclick = function () {
+      island.toggleDebug();
+      perlinCanvas.style.display = (perlinCanvas.style.display == 'block' ? 'none' : 'block');
+    };
+
+    island.init(islandCanvas, perlinCanvas, {
+      width: 1000,
+      height: 1000,
+      perlinWidth: 256,
+      perlinHeight: 256,
+      // If set to true, you can click on the map to enter "debug" mode.
+      // Warning : debug mode is slow to initialize, set to false for faster rendering.
+      allowDebug: true,
+      // Number of voronoi cells
+      numSites: 100000,
+      // Distribution of the site : random, square or hexagon
+      sitesDistribution: 'hexagon',
+      // Will move each site in a random way (in %), for the square or hexagon distribution to look more random
+      sitesRandomisation: 80,
+      // Number of time we apply the relaxation algo to the voronoi graph (slow !),
+      // for the random distribution to look less random
+      numGraphRelaxation: 0,
+      cliffsThreshold: 0.15,
+      // Lake elevation will increase by this value (* the river size) when a new river end inside
+      lakesThreshold: 0.005,
+      numRivers: (10000 / 200),
+      maxRiversSize: 4,
+      shading: 0.35,
+      shadeOcean: false
+    });
+  };
+</script>
+</body>
+</html>
